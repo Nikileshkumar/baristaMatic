@@ -1,12 +1,13 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class BaristaSimulator {
 
-    private Map<String, List<Map<String, Integer>>> drink;
+    private Map<String, Map<String, Integer>> drink;
     private Map<Integer, String> menu;
     private Map<String, Double> ingredientCost;
     private Map<String, Integer> ingredientQuantity;
@@ -27,7 +28,7 @@ public class BaristaSimulator {
                 System.out.println("Invalid Selection: " + input);
             } else {
                 if (input.equalsIgnoreCase("R")) {
-                    baristaSimulator.load();    //if the input is R or r, reloading the inventory
+                    baristaSimulator.ingredientQuantity.replaceAll((x, y) -> 10);    //if the input is R or r, reloading the inventory
                 } else if (input.equalsIgnoreCase("Q")) { //if the input is Q or q, quitting the program
                     break;
                 } else if (!baristaSimulator.dispenseItem(baristaSimulator.menu.get(Integer.valueOf(input)))) { //Dispensing the inventory
@@ -39,61 +40,38 @@ public class BaristaSimulator {
         }
     }
 
-    //getting the cost of each drink
-    public Double getCost(String drink) {
-        return this.drink.get(drink).stream().flatMap(x -> x.entrySet().stream()).map(y -> this.ingredientCost.get(y.getKey()) * y.getValue()).mapToDouble(Double::valueOf).sum();
-    }
-    //checking the availability status of each drink
-    public boolean availStatus(String drink) {
-        return this.drink.get(drink).stream().flatMap(x -> x.entrySet().stream()).allMatch(y -> this.ingredientQuantity.get(y.getKey()) >= y.getValue());
+    public Double getCost(String drink) { //getting the cost of each drink
+        return this.drink.get(drink).entrySet().stream().map(y -> this.ingredientCost.get(y.getKey()) * y.getValue()).mapToDouble(Double::valueOf).sum();
     }
 
-    //dispensing the item based on availability of drink
-    public boolean dispenseItem(String drink) {
+    public boolean availStatus(String drink) { //checking the availability status of each drink
+        return this.drink.get(drink).entrySet().stream().allMatch(y -> this.ingredientQuantity.get(y.getKey()) >= y.getValue());
+    }
+
+    public boolean dispenseItem(String drink) { //dispensing the item based on availability of drink
         if (!availStatus(drink))
             return false;
-        this.drink.get(drink).stream().flatMap(x -> x.entrySet().stream()).forEach(y -> this.ingredientQuantity.put(y.getKey(), this.ingredientQuantity.get(y.getKey()) - y.getValue()));
+        this.drink.get(drink).forEach((key, value) -> this.ingredientQuantity.put(key, this.ingredientQuantity.get(key) - value));
         return true;
     }
 
-    //initialising the inventory
-    public void load() {
-        drink = new HashMap<>();
-        drink.put("Coffee", List.of(Collections.singletonMap("Coffee", 3), Collections.singletonMap("Sugar", 1), Collections.singletonMap("Cream", 1)));
-        drink.put("Decaf Coffee", List.of(Collections.singletonMap("Decaf Coffee", 3), Collections.singletonMap("Sugar", 1), Collections.singletonMap("Cream", 1)));
-        drink.put("Caffe Latte", List.of(Collections.singletonMap("Espresso", 2), Collections.singletonMap("Steamed Milk", 1)));
-        drink.put("Caffe Americano", List.of(Collections.singletonMap("Espresso", 3)));
-        drink.put("Caffe Mocha", List.of(Collections.singletonMap("Espresso", 1), Collections.singletonMap("Cocoa", 1), Collections.singletonMap("Steamed Milk", 1), Collections.singletonMap("Whipped Cream", 1)));
-        drink.put("Cappuccino", List.of(Collections.singletonMap("Espresso", 2), Collections.singletonMap("Steamed Milk", 1), Collections.singletonMap("Foamed Milk", 1)));
+    public void load() { //initialising the inventory
+        drink = Map.of(
+        "Coffee", Map.of("Coffee", 3, "Sugar", 1, "Cream", 1),
+        "Decaf Coffee", Map.of("Decaf Coffee", 3, "Sugar", 1, "Cream", 1),
+        "Caffe Latte", Map.of("Espresso", 2, "Steamed Milk", 1),
+        "Caffe Americano", Map.of("Espresso", 3),
+        "Caffe Mocha", Map.of("Espresso", 1, "Cocoa", 1, "Steamed Milk", 1, "Whipped Cream", 1),
+        "Cappuccino", Map.of("Espresso", 2, "Steamed Milk", 1, "Foamed Milk", 1));
 
-        menu = new HashMap<>();
-        menu.put(1, "Caffe Americano");
-        menu.put(2, "Caffe Latte");
-        menu.put(3, "Caffe Mocha");
-        menu.put(4, "Cappuccino");
-        menu.put(5, "Coffee");
-        menu.put(6, "Decaf Coffee");
+        menu = Map.of(1, "Caffe Americano",2, "Caffe Latte",3, "Caffe Mocha",
+                4,"Cappuccino",5, "Coffee",6, "Decaf Coffee");
 
-        ingredientCost = new HashMap<>();
-        ingredientCost.put("Coffee", 0.75);
-        ingredientCost.put("Decaf Coffee", 0.75);
-        ingredientCost.put("Sugar", 0.25);
-        ingredientCost.put("Cream", 0.25);
-        ingredientCost.put("Steamed Milk", 0.35);
-        ingredientCost.put("Foamed Milk", 0.35);
-        ingredientCost.put("Espresso", 1.10);
-        ingredientCost.put("Cocoa", 0.90);
-        ingredientCost.put("Whipped Cream", 1.00);
+        ingredientCost = Map.of("Coffee", 0.75, "Decaf Coffee", 0.75, "Sugar", 0.25,
+        "Cream", 0.25, "Steamed Milk", 0.35, "Foamed Milk", 0.35,
+        "Espresso", 1.10, "Cocoa", 0.90, "Whipped Cream", 1.00);
 
         ingredientQuantity = new HashMap<>();
-        ingredientQuantity.put("Coffee", 10);
-        ingredientQuantity.put("Decaf Coffee", 10);
-        ingredientQuantity.put("Sugar", 10);
-        ingredientQuantity.put("Cream", 10);
-        ingredientQuantity.put("Steamed Milk", 10);
-        ingredientQuantity.put("Foamed Milk", 10);
-        ingredientQuantity.put("Espresso", 10);
-        ingredientQuantity.put("Cocoa", 10);
-        ingredientQuantity.put("Whipped Cream", 10);
+        ingredientCost.keySet().forEach(x -> ingredientQuantity.put(x, 10));
     }
 }
